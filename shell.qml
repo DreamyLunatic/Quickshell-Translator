@@ -154,4 +154,26 @@ ShellRoot {
             onStreamFinished: root.result = this.text.trim()
         }
     }
+
+    Process {
+        id: argos
+        running: true
+        command: ["argos-daemon"]
+        environment: ({ OMP_NUM_THREADS: "2" })
+        stdinEnabled: true
+        stdout: SplitParser {
+            onRead: data => root.resultText = data
+        }
+    }
+
+    function translateOffline(text) {
+        const ru = /[А-Яа-яЁё]/.test(text)
+        const flat = text.replace(/\n/g, " ")
+        argos.write(`${ru ? "ru" : "en"}\t${ru ? "en" : "ru"}\t${flat}\n`)
+    }
+
+    IpcHandler {
+        target: "translator"
+        function toggle(): void { win.visible = !win.visible }
+    }
 }
