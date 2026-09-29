@@ -180,6 +180,8 @@ ShellRoot {
         argos.write(`${ru ? "ru" : "en"}\t${ru ? "en" : "ru"}\t${flat}\n`)
     }
 
+
+    // Not used yet
     IpcHandler {
         target: "translator"
         function toggle(): void { win.visible = !win.visible }
