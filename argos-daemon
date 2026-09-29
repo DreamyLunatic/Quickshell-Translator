@@ -1,5 +1,7 @@
 #!/home/elijah/.local/share/pipx/venvs/argostranslate/bin/python
 
+import os
+os.environ.setdefault("ARGOS_CHUNK_TYPE", "MINISBD")
 import sys
 import argostranslate.translate as t
 

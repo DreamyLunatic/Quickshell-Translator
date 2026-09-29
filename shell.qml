@@ -123,8 +123,6 @@ ShellRoot {
                 return;            // не принимаем, TextArea вставит перенос
             root.result = "…";
 
-            translator.running = false;
-            translator.command = ["trans", "-b", root.target, input.text] 
             translator.running = true;
             break;
         default:
@@ -141,7 +139,6 @@ ShellRoot {
         stdout: StdioCollector {
             onStreamFinished: {
                 input.text = this.text;
-                translator.command = ["trans", "-b", root.target, input.text];
                 translator.running = true;
             }
         }
@@ -150,22 +147,33 @@ ShellRoot {
     Process {
         id: translator
 
+        command: ["trans", "-b", root.target, input.text]
         stdout: StdioCollector {
-            onStreamFinished: root.result = this.text.trim()
+            onStreamFinished: {
+                const out = this.text.trim()
+                if (out !== "")
+                    root.result = out
+                else
+                    root.translateOffline(input.text)
+            }
         }
     }
-
     Process {
         id: argos
         running: true
-        command: ["argos-daemon"]
-        environment: ({ OMP_NUM_THREADS: "2" })
+        command: [Quickshell.shellPath("argos-daemon")]
         stdinEnabled: true
-        stdout: SplitParser {
-            onRead: data => root.resultText = data
-        }
-    }
 
+        onRunningChanged: console.log("argos running:", running)
+        onExited: (code, status) => console.log("argos exited:", code, status)
+
+        stdout: SplitParser {
+            onRead: data => root.result = data 
+        } 
+        stderr: SplitParser { 
+            onRead: data => console.log("argos stderr:", data) 
+        } 
+    }
     function translateOffline(text) {
         const ru = /[А-Яа-яЁё]/.test(text)
         const flat = text.replace(/\n/g, " ")
