@@ -121,8 +121,6 @@ ShellRoot {
         case Qt.Key_Enter:
             if (event.modifiers & Qt.ShiftModifier)
                 return;            // не принимаем, TextArea вставит перенос
-            root.result = "…";
-
             translator.running = true;
             break;
         default:
@@ -147,6 +145,7 @@ ShellRoot {
     Process {
         id: translator
 
+        onStarted: root.result = "…"
         command: ["trans", "-b", root.target, input.text]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -182,8 +181,12 @@ ShellRoot {
 
 
     // Not used yet
+    // qs ipc call translator toggle
     IpcHandler {
         target: "translator"
-        function toggle(): void { win.visible = !win.visible }
+        function toggle(): void { 
+            win.visible = !win.visible;
+            if (win.visible) clipboard.running = true;
+        }
     }
 }

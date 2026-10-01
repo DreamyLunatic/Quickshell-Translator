@@ -14,6 +14,7 @@
 - Menu
 - Multi-language support
 - Copy button for translated text
+- Language text detection
 
 ## Requirements
 
@@ -99,4 +100,38 @@ and caches it. Run one test translation while connected:
 printf 'en\tru\tSome shit\n' | ./argos-daemon
 ```
 
-After that, offline translation works without network access.
+## Usage
+
+The translator is designed to **run in the background all the time** and only
+show or hide its window when you need it. It is not started anew on every
+keypress: this way the offline translation models are loaded into memory once,
+and every translation after that is instant.
+
+### 1. Start the translator automatically
+
+Add it to your compositor's autostart. For Hyprland, in `hyprland.conf`:
+
+```ini
+exec-once = qs -c translator
+```
+
+If you already have an `exec-once` line, you can append it there with `&`.
+
+### 2. Bind a key to show/hide it
+
+```ini
+bind = $mainMod, T, exec, qs ipc -c translator call translator toggle
+```
+
+When the window opens, the translator reads the current clipboard contents
+and translates them immediately. Copy any text, press the shortcut,
+and the translation is already there. Press the shortcut again to hide the window.
+
+The translation direction is detected automatically: text containing Cyrillic
+is translated into English, everything else into Russian.
+
+### Other compositors
+
+Any compositor works, as long as it can run a command at startup and on a keypress.
+Start `qs -c translator` once at login and bind
+`qs ipc -c translator call translator toggle` to a key of your choice.fter that, offline translation works without network access.
