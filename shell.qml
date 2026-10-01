@@ -13,6 +13,7 @@ ShellRoot {
     id: root
 
     property string result: ""
+    property string from: ":en" // Not in use right now
     property string target: ":ru"
 
     PanelWindow {
@@ -21,7 +22,7 @@ ShellRoot {
         focusable: true
         implicitWidth: 700
         implicitHeight: 300
-        color: "transparent"   // without this you get a white/opaque box
+        color: "transparent"
 
         Rectangle {
             id: bg
@@ -121,7 +122,7 @@ ShellRoot {
         case Qt.Key_Enter:
             if (event.modifiers & Qt.ShiftModifier)
                 return;            // не принимаем, TextArea вставит перенос
-            translator.running = true;
+            translate();
             break;
         default:
             return;                // остальное пусть обрабатывается как обычно
@@ -137,7 +138,7 @@ ShellRoot {
         stdout: StdioCollector {
             onStreamFinished: {
                 input.text = this.text;
-                translator.running = true;
+                root.translate();
             }
         }
     }    // trans из пакета translate-shell: sudo pacman -S translate-shell
@@ -145,8 +146,6 @@ ShellRoot {
     Process {
         id: translator
 
-        onStarted: root.result = "…"
-        command: ["trans", "-b", root.target, input.text]
         stdout: StdioCollector {
             onStreamFinished: {
                 const out = this.text.trim()
@@ -173,14 +172,20 @@ ShellRoot {
             onRead: data => console.log("argos stderr:", data) 
         } 
     }
+    
+    function translate() {
+        root.target = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru"
+        root.result = "…"
+        translator.command = ["trans", "-b", root.target, input.text]
+        translator.running = true
+    }
+
     function translateOffline(text) {
-        const ru = /[А-Яа-яЁё]/.test(text)
         const flat = text.replace(/\n/g, " ")
-        argos.write(`${ru ? "ru" : "en"}\t${ru ? "en" : "ru"}\t${flat}\n`)
+        argos.write(`${root.target === ":ru" ? "ru" : "en"}\t${root.target === ":ru" ? "en" : "ru"}\t${flat}\n`)
     }
 
 
-    // Not used yet
     // qs ipc call translator toggle
     IpcHandler {
         target: "translator"

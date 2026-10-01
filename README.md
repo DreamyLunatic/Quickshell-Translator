@@ -3,6 +3,7 @@
 - Offline mode
 - Quickshell interface
 - Clipboard paste since start
+- Language detection
 
 ## Keybinds
 - Tab: change direction
@@ -14,7 +15,6 @@
 - Menu
 - Multi-language support
 - Copy button for translated text
-- Language text detection
 
 ## Requirements
 
