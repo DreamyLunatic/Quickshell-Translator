@@ -13,6 +13,7 @@ ShellRoot {
     id: root
 
     property string result: ""
+    property string translatedText: "" // Not in use right now
     property string from: ":en" // Not in use right now
     property string target: ":ru"
 
@@ -62,7 +63,104 @@ ShellRoot {
                     color: "#6c7086"
                     font.pixelSize: 13
                 }
-            }
+                Row {
+                    spacing: 8
+
+                    component LangBox: ComboBox {
+                        id: box
+                        textRole: "name"
+                        valueRole: "code"
+                        focusPolicy: Qt.NoFocus          // чтобы Tab не уходил в комбобокс
+                        implicitWidth: 140
+                        implicitHeight: 32
+
+                        background: Rectangle {
+                            radius: 8
+                            color: "#313244"
+                            border.width: 1
+                            border.color: box.popup.visible ? "#89b4fa" : "#45475a"
+                        }
+
+                        contentItem: Text {
+                            leftPadding: 10
+                            rightPadding: box.indicator.width + 10
+                            text: box.displayText
+                            color: "#cdd6f4"
+                            font.pixelSize: 13
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+
+                        indicator: Text {
+                            x: box.width - width - 10
+                            y: (box.height - height) / 2
+                            text: box.popup.visible ? "▴" : "▾"
+                            color: "#6c7086"
+                            font.pixelSize: 12
+                        }
+
+                        delegate: ItemDelegate {
+                            id: del
+                            required property var modelData
+                            required property int index
+                            width: box.width
+                            height: 30
+                            highlighted: box.highlightedIndex === index
+
+                            contentItem: Text {
+                                text: del.modelData.name
+                                color: del.highlighted ? "#89b4fa" : "#cdd6f4"
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                radius: 6
+                                color: del.highlighted ? "#45475a" : "transparent"
+                            }
+                        }
+
+                        popup: Popup {
+                            y: box.height + 4
+                            width: box.width
+                            padding: 4
+                            implicitHeight: Math.min(contentItem.implicitHeight + 8, 220)
+
+                            contentItem: ListView {
+                                clip: true
+                                implicitHeight: contentHeight
+                                model: box.popup.visible ? box.delegateModel : null
+                                currentIndex: box.highlightedIndex
+                                ScrollIndicator.vertical: ScrollIndicator {}
+                            }
+                            background: Rectangle {
+                                radius: 8
+                                color: "#1e1e2e"
+                                border.width: 1
+                                border.color: "#45475a"
+                            }
+                        }
+                    }
+
+                    LangBox {
+                        model: root.sourceLangs
+                        currentIndex: 0
+                        onActivated: root.sourceLang = currentValue
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "→"
+                        color: "#6c7086"
+                        font.pixelSize: 16
+                    }
+
+                    LangBox {
+                        model: root.targetLangs
+                        currentIndex: 1
+                        onActivated: root.targetLang = currentValue
+                    }
+                }
+                }
             RowLayout {
                 spacing: 0
 
@@ -137,6 +235,7 @@ ShellRoot {
 
         stdout: StdioCollector {
             onStreamFinished: {
+                root.target = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru"
                 input.text = this.text;
                 root.translate();
             }
@@ -152,7 +251,10 @@ ShellRoot {
                 if (out !== "")
                     root.result = out
                 else
+                {
+                    console.log("shit")
                     root.translateOffline(input.text)
+                }
             }
         }
     }
@@ -174,7 +276,6 @@ ShellRoot {
     }
     
     function translate() {
-        root.target = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru"
         root.result = "…"
         translator.command = ["trans", "-b", root.target, input.text]
         translator.running = true
