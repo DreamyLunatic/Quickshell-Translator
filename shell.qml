@@ -17,6 +17,19 @@ ShellRoot {
     property string from: ":en" // Not in use right now
     property string target: ":ru"
 
+    property string sourceLang: "auto"
+    property string targetLang: "ru"
+
+    property var targetLangs: [
+        { name: "English",    code: "en" },
+        { name: "Русский",    code: "ru" },
+        { name: "Українська", code: "uk" },
+        { name: "Gaeilge",    code: "ga" },
+        { name: "Deutsch",    code: "de" },
+        { name: "Polski",     code: "pl" }
+    ]
+    property var sourceLangs: [{ name: "Auto", code: "auto" }].concat(targetLangs)
+    
     PanelWindow {
         id: win
 
@@ -35,7 +48,7 @@ ShellRoot {
         // иначе ввод уйдёт в окно под нами.
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-
+        
         FocusScope {
             anchors.fill: parent
             focus: true
@@ -99,6 +112,7 @@ ShellRoot {
                             font.pixelSize: 12
                         }
 
+                        // Items in popup list
                         delegate: ItemDelegate {
                             id: del
                             required property var modelData
@@ -160,7 +174,7 @@ ShellRoot {
                         onActivated: root.targetLang = currentValue
                     }
                 }
-                }
+            }
             RowLayout {
                 spacing: 0
 
