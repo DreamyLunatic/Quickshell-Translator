@@ -1,5 +1,5 @@
 ## What's in
-- Language supported: English, Russian
+- Language supported: English, Russian, Ukrainian, Polish, Gaelic, German
 - Offline mode
 - Quickshell interface
 - Clipboard paste since start
@@ -61,6 +61,14 @@ pipx runpip argostranslate install torch --index-url https://download.pytorch.or
 argospm update
 argospm install translate-en_ru
 argospm install translate-ru_en
+argospm install translate-en_uk translate-uk_en
+argospm install translate-en_de translate-de_en
+argospm install translate-en_pl translate-pl_en
+argospm install translate-en_ga translate-ga_en
+
+OR
+
+for p in en_ru en_uk uk_en en_de de_en en_pl pl_en en_ga ga_en; do argospm install translate-$p; done
 ```
 
 Check what is installed with `argospm list`.
