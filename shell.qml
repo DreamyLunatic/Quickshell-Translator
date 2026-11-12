@@ -21,12 +21,12 @@ ShellRoot {
     property string targetLang: "ru"
 
     property var targetLangs: [
-        { name: "English",    code: "en" },
-        { name: "Русский",    code: "ru" },
-        { name: "Українська", code: "uk" },
-        { name: "Gaeilge",    code: "ga" },
-        { name: "Deutsch",    code: "de" },
-        { name: "Polski",     code: "pl" }
+        { name: "English",    code: ":en" },
+        { name: "Русский",    code: ":ru" },
+        { name: "Українська", code: ":uk" },
+        { name: "Gaeilge",    code: ":ga" },
+        { name: "Deutsch",    code: ":de" },
+        { name: "Polski",     code: ":pl" }
     ]
     property var sourceLangs: [{ name: "Auto", code: "auto" }].concat(targetLangs)
     
@@ -65,14 +65,14 @@ ShellRoot {
                 spacing: 12
 
                 Text {
-                    text: root.target === ":ru" ? "EN → RU" : "RU → EN"
+                    text: root.from.slice(1).toUpperCase() + " → " + root.targetLang.slice(1).toUpperCase()
                     color: "#89b4fa"
                     font.pixelSize: 13
                     font.bold: true
                 }
 
                 Text {
-                    text: root.target === ":ru" ? "Tab — сменить направление" : "Tab - change direction"
+                    text: root.targetLang === ":ru" ? "Tab — сменить направление" : "Tab - change direction"
                     color: "#6c7086"
                     font.pixelSize: 13
                 }
@@ -81,8 +81,8 @@ ShellRoot {
 
                     component LangBox: ComboBox {
                         id: box
-                        textRole: "name"
-                        valueRole: "code"
+                        textRole: "name" // displayText
+                        valueRole: "code" // currentValue
                         focusPolicy: Qt.NoFocus          // чтобы Tab не уходил в комбобокс
                         implicitWidth: 140
                         implicitHeight: 32
@@ -115,7 +115,7 @@ ShellRoot {
                         // Items in popup list
                         delegate: ItemDelegate {
                             id: del
-                            required property var modelData
+                            required property var modelData // initializes automaticly after model: box.delegateModel
                             required property int index
                             width: box.width
                             height: 30
@@ -153,7 +153,7 @@ ShellRoot {
                                 border.color: "#45475a"
                             }
                         }
-                    }
+                    } // initializes automaticly
 
                     LangBox {
                         model: root.sourceLangs
@@ -192,7 +192,7 @@ ShellRoot {
                         selectionColor: "#585b70"
                         wrapMode: TextArea.Wrap
                         font.pixelSize: 16
-                        placeholderText: root.target === ":ru" ? "текст для перевода…" : "translation text..."
+                        placeholderText: root.targetLang === ":ru" ? "текст для перевода…" : "translation text..."
                         placeholderTextColor: "#aef0f8"
                     
                         background: Rectangle {
@@ -225,10 +225,10 @@ ShellRoot {
     function handleKey(event) {
         switch (event.key) {
         case Qt.Key_Escape:
-            Qt.quit();
+            win.visible = false;
             break;
         case Qt.Key_Tab:
-            root.target = root.target === ":ru" ? ":en" : ":ru";
+            root.targetLang = root.targetLang === ":ru" ? ":en" : ":ru"; // TODO
             break;
         case Qt.Key_Return:
         case Qt.Key_Enter:
@@ -249,7 +249,7 @@ ShellRoot {
 
         stdout: StdioCollector {
             onStreamFinished: {
-                root.target = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru"
+                root.targetLang = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru" // TODO
                 input.text = this.text;
                 root.translate();
             }
@@ -291,13 +291,13 @@ ShellRoot {
     
     function translate() {
         root.result = "…"
-        translator.command = ["trans", "-b", root.target, input.text]
+        translator.command = ["trans", "-b", root.targetLang, input.text]
         translator.running = true
     }
 
     function translateOffline(text) {
         const flat = text.replace(/\n/g, " ")
-        argos.write(`${root.target === ":ru" ? "ru" : "en"}\t${root.target === ":ru" ? "en" : "ru"}\t${flat}\n`)
+        argos.write(`${root.targetLang ===  /[іїєґ]/i.test(text) ? "uk" : /[а-яё]/i.test(text) ? "ru" : /[ąćęłńśźż]/i.test(text) ? "pl" : /[äöüß]/i.test(text) ? "de" : /[áéíóú]/i.test(text) ? "ga" : "en"}\t${root.targetLang.slice(1)}\t${flat}\n`) // CHECK
     }
 
 
