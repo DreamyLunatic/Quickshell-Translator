@@ -7,10 +7,21 @@ import argostranslate.translate as t
 
 langs = {l.code: l for l in t.get_installed_languages()}
 tr = {("en", "ru"): langs["en"].get_translation(langs["ru"]),
-      ("ru", "en"): langs["ru"].get_translation(langs["en"])}
+      ("ru", "en"): langs["ru"].get_translation(langs["en"]),
+      ("pl", "en"): langs["ru"].get_translation(langs["en"]),
+      ("ga", "en"): langs["ru"].get_translation(langs["en"]),
+      ("de", "en"): langs["ru"].get_translation(langs["en"]),
+      ("uk", "en"): langs["ru"].get_translation(langs["en"]),
+      
+      ("en", "pl"): langs["ru"].get_translation(langs["pl"]),
+      ("en", "ga"): langs["ru"].get_translation(langs["en"]),
+      ("en", "de"): langs["ru"].get_translation(langs["en"]),
+      ("en", "en"): langs["ru"].get_translation(langs["en"]),
+      ("ru", "en"): langs["ru"].get_translation(langs["en"]),
+      }
 for x in tr.values():
     x.translate("warm up")
 
 for line in sys.stdin:
     src, dst, text = line.rstrip("\n").split("\t", 2)
-    print(tr[(src, dst)].translate(text).replace("\n", " "), flush=True)
+    print(langs[src].get_translation(langs[dst]).translate(text).replace("\n", " "), flush=True)

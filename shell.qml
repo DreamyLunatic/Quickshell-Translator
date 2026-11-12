@@ -13,9 +13,23 @@ ShellRoot {
     id: root
 
     property string result: ""
+    property string translatedText: "" // Not in use right now
     property string from: ":en" // Not in use right now
     property string target: ":ru"
 
+    property string sourceLang: "auto"
+    property string targetLang: "ru"
+
+    property var targetLangs: [
+        { name: "English",    code: ":en" },
+        { name: "Русский",    code: ":ru" },
+        { name: "Українська", code: ":uk" },
+        { name: "Gaeilge",    code: ":ga" },
+        { name: "Deutsch",    code: ":de" },
+        { name: "Polski",     code: ":pl" }
+    ]
+    property var sourceLangs: [{ name: "Auto", code: "auto" }].concat(targetLangs)
+    
     PanelWindow {
         id: win
 
@@ -34,7 +48,7 @@ ShellRoot {
         // иначе ввод уйдёт в окно под нами.
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-
+        
         FocusScope {
             anchors.fill: parent
             focus: true
@@ -51,16 +65,114 @@ ShellRoot {
                 spacing: 12
 
                 Text {
-                    text: root.target === ":ru" ? "EN → RU" : "RU → EN"
+                    text: root.from.slice(1).toUpperCase() + " → " + root.targetLang.slice(1).toUpperCase()
                     color: "#89b4fa"
                     font.pixelSize: 13
                     font.bold: true
                 }
 
                 Text {
-                    text: root.target === ":ru" ? "Tab — сменить направление" : "Tab - change direction"
+                    text: root.targetLang === ":ru" ? "Tab — сменить направление" : "Tab - change direction"
                     color: "#6c7086"
                     font.pixelSize: 13
+                }
+                Row {
+                    spacing: 8
+
+                    component LangBox: ComboBox {
+                        id: box
+                        textRole: "name" // displayText
+                        valueRole: "code" // currentValue
+                        focusPolicy: Qt.NoFocus          // чтобы Tab не уходил в комбобокс
+                        implicitWidth: 140
+                        implicitHeight: 32
+
+                        background: Rectangle {
+                            radius: 8
+                            color: "#313244"
+                            border.width: 1
+                            border.color: box.popup.visible ? "#89b4fa" : "#45475a"
+                        }
+
+                        contentItem: Text {
+                            leftPadding: 10
+                            rightPadding: box.indicator.width + 10
+                            text: box.displayText
+                            color: "#cdd6f4"
+                            font.pixelSize: 13
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+
+                        indicator: Text {
+                            x: box.width - width - 10
+                            y: (box.height - height) / 2
+                            text: box.popup.visible ? "▴" : "▾"
+                            color: "#6c7086"
+                            font.pixelSize: 12
+                        }
+
+                        // Items in popup list
+                        delegate: ItemDelegate {
+                            id: del
+                            required property var modelData // initializes automaticly after model: box.delegateModel
+                            required property int index
+                            width: box.width
+                            height: 30
+                            highlighted: box.highlightedIndex === index
+
+                            contentItem: Text {
+                                text: del.modelData.name
+                                color: del.highlighted ? "#89b4fa" : "#cdd6f4"
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                radius: 6
+                                color: del.highlighted ? "#45475a" : "transparent"
+                            }
+                        }
+
+                        popup: Popup {
+                            y: box.height + 4
+                            width: box.width
+                            padding: 4
+                            implicitHeight: Math.min(contentItem.implicitHeight + 8, 220)
+
+                            contentItem: ListView {
+                                clip: true
+                                implicitHeight: contentHeight
+                                model: box.popup.visible ? box.delegateModel : null
+                                currentIndex: box.highlightedIndex
+                                ScrollIndicator.vertical: ScrollIndicator {}
+                            }
+                            background: Rectangle {
+                                radius: 8
+                                color: "#1e1e2e"
+                                border.width: 1
+                                border.color: "#45475a"
+                            }
+                        }
+                    } // initializes automaticly
+
+                    LangBox {
+                        model: root.sourceLangs
+                        currentIndex: 0
+                        onActivated: root.sourceLang = currentValue
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "→"
+                        color: "#6c7086"
+                        font.pixelSize: 16
+                    }
+
+                    LangBox {
+                        model: root.targetLangs
+                        currentIndex: 1
+                        onActivated: root.targetLang = currentValue
+                    }
                 }
             }
             RowLayout {
@@ -80,7 +192,7 @@ ShellRoot {
                         selectionColor: "#585b70"
                         wrapMode: TextArea.Wrap
                         font.pixelSize: 16
-                        placeholderText: root.target === ":ru" ? "текст для перевода…" : "translation text..."
+                        placeholderText: root.targetLang === ":ru" ? "текст для перевода…" : "translation text..."
                         placeholderTextColor: "#aef0f8"
                     
                         background: Rectangle {
@@ -113,10 +225,10 @@ ShellRoot {
     function handleKey(event) {
         switch (event.key) {
         case Qt.Key_Escape:
-            Qt.quit();
+            win.visible = false;
             break;
         case Qt.Key_Tab:
-            root.target = root.target === ":ru" ? ":en" : ":ru";
+            root.targetLang = root.targetLang === ":ru" ? ":en" : ":ru"; // TODO
             break;
         case Qt.Key_Return:
         case Qt.Key_Enter:
@@ -137,6 +249,7 @@ ShellRoot {
 
         stdout: StdioCollector {
             onStreamFinished: {
+                root.targetLang = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru" // TODO
                 input.text = this.text;
                 root.translate();
             }
@@ -152,7 +265,10 @@ ShellRoot {
                 if (out !== "")
                     root.result = out
                 else
+                {
+                    console.log("shit")
                     root.translateOffline(input.text)
+                }
             }
         }
     }
@@ -174,15 +290,14 @@ ShellRoot {
     }
     
     function translate() {
-        root.target = /[А-Яа-яЁё]/.test(input.text) ? ":en" : ":ru"
         root.result = "…"
-        translator.command = ["trans", "-b", root.target, input.text]
+        translator.command = ["trans", "-b", root.targetLang, input.text]
         translator.running = true
     }
 
     function translateOffline(text) {
         const flat = text.replace(/\n/g, " ")
-        argos.write(`${root.target === ":ru" ? "ru" : "en"}\t${root.target === ":ru" ? "en" : "ru"}\t${flat}\n`)
+        argos.write(`${root.targetLang ===  /[іїєґ]/i.test(text) ? "uk" : /[а-яё]/i.test(text) ? "ru" : /[ąćęłńśźż]/i.test(text) ? "pl" : /[äöüß]/i.test(text) ? "de" : /[áéíóú]/i.test(text) ? "ga" : "en"}\t${root.targetLang.slice(1)}\t${flat}\n`) // CHECK
     }
 
 
